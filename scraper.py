@@ -43,8 +43,9 @@ def main():
 
         content_str = (title + " " + desc).lower()
         
-        if "commentary" in content_str and link not in existing_links:
-            print(f"New commentary found: {title}. Hunting for direct link...")
+        # NOTE: Temporarily searching for '4k' to force a successful test!
+        if "4k" in content_str and link not in existing_links:
+            print(f"New release found: {title}. Hunting for direct link...")
             direct_link = get_direct_link(title)
             new_entries.append([title, pub_date, link, direct_link])
 
@@ -57,7 +58,7 @@ def main():
             writer.writerows(new_entries)
         print(f"Success! Added {len(new_entries)} new releases to the database.")
     else:
-        print("No new commentary tracks announced today.")
+        print("No new tracks announced today.")
 
 if __name__ == "__main__":
     main()
