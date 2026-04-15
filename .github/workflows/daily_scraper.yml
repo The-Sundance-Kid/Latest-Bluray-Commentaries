@@ -1,0 +1,35 @@
+name: Daily Blu-ray Commentary Scraper
+
+on:
+  schedule:
+    - cron: '0 0 * * *' 
+  workflow_dispatch: 
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the Scraper Application
+        run: python scraper.py
+
+      - name: Commit and Push Updated Database
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add commentary_releases.csv
+          git diff-index --quiet HEAD || git commit -m "Automated database update: New commentary tracks added"
+          git push
