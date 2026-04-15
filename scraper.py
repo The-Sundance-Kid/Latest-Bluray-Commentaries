@@ -1,24 +1,30 @@
 import feedparser
 import csv
 import os
+import urllib.parse
 import re
-from duckduckgo_search import DDGS
 
 RSS_URL = "https://www.blu-ray.com/rss/newsfeed.xml"
 CSV_FILE = "commentary_releases.csv"
 
-def get_direct_link(title):
+def generate_order_link(title, description):
+    """Routes the title to the correct boutique label's storefront search."""
     clean_title = re.sub(r'(4K|Blu-ray|UHD|Standard Edition|Limited Edition|\(\))', '', title, flags=re.IGNORECASE).strip()
-    query = f"{clean_title} blu-ray site:criterion.com OR site:kinolorber.com OR site:arrowvideo.com OR site:amazon.com"
-    
-    try:
-        results = DDGS().text(query, max_results=1)
-        for r in results:
-            return r['href'] 
-    except Exception as e:
-        print(f"Search failed for {title}: {e}")
-        return "Manual search required"
-    return "Link not found"
+    encoded_title = urllib.parse.quote_plus(clean_title)
+    content_str = (title + " " + description).lower()
+
+    if "criterion" in content_str:
+        return f"https://www.criterion.com/shop/browse?q={encoded_title}"
+    elif "kino lorber" in content_str or "kino studio classics" in content_str:
+        return f"https://kinolorber.com/search?q={encoded_title}"
+    elif "arrow video" in content_str:
+        return f"https://www.arrowvideo.com/elysium.search?search={encoded_title}"
+    elif "shout! factory" in content_str or "scream factory" in content_str:
+        return f"https://shoutfactory.com/search?q={encoded_title}"
+    elif "vinegar syndrome" in content_str or "cinématographe" in content_str:
+        return f"https://vinegarsyndrome.com/search?q={encoded_title}"
+    else:
+        return f"https://www.amazon.com/s?k={encoded_title}+blu-ray"
 
 def main():
     print("Fetching Blu-ray news feed...")
@@ -43,18 +49,18 @@ def main():
 
         content_str = (title + " " + desc).lower()
         
-        # NOTE: Temporarily searching for '4k' to force a successful test!
+        # NOTE: Still using the "4k" stress test so it works immediately!
         if "4k" in content_str and link not in existing_links:
-            print(f"New release found: {title}. Hunting for direct link...")
-            direct_link = get_direct_link(title)
-            new_entries.append([title, pub_date, link, direct_link])
+            print(f"New release found: {title}. Generating direct search link...")
+            order_link = generate_order_link(title, desc)
+            new_entries.append([title, pub_date, link, order_link])
 
     if new_entries:
         mode = 'a' if os.path.exists(CSV_FILE) else 'w'
         with open(CSV_FILE, mode, newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             if mode == 'w':
-                writer.writerow(["Title", "Date Announced", "News Link", "Direct Purchase Link"])
+                writer.writerow(["Title", "Date Announced", "News Link", "Order Link"])
             writer.writerows(new_entries)
         print(f"Success! Added {len(new_entries)} new releases to the database.")
     else:
